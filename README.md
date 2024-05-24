@@ -1,3 +1,5 @@
+Spotify Data Pipeline Project
+
 **Overview**
 This project demonstrates a data pipeline for extracting, transforming, and loading Spotify's top 50 songs data into Snowflake for analysis. 
 The pipeline uses AWS services including Lambda, S3, and CloudWatch, alongside Snowflake for data warehousing.
