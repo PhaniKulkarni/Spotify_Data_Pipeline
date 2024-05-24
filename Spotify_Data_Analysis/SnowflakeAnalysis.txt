@@ -1,0 +1,88 @@
+create or replace database spotifydb;
+create or replace schema spotifyschema;
+
+create or replace storage integration s3_init
+TYPE=EXTERNAL_STAGE
+STORAGE_PROVIDER=S3
+ENABLED=TRUE
+STORAGE_AWS_ROLE_ARN="arn:aws:iam::851725411086:role/snowflake_conn"
+STORAGE_ALLOWED_LOCATIONS=('s3://spotify-bucket-phani')
+
+desc integration s3_init
+
+create or replace table spotifydb.spotifyschema.album_table(
+album_id varchar(250),
+name varchar(250),
+release_date date,
+Total_Tracks number(38,0),
+url varchar(250)
+);
+
+create or replace table spotifydb.spotifyschema.artist_table(
+artist_id varchar(250),
+artist_name varchar(250),
+artist_url varchar(250)
+);
+
+create or replace table spotifydb.spotifyschema.song_table(
+song_id	varchar(250),
+song_name varchar(250),
+duration_ms	bigint,
+url varchar(250),
+popularity bigint,
+song_added date,
+album_id varchar(250),
+artist_id varchar(250)
+);
+
+create or replace file format spotifydb.spotifyschema.spotifyfileformat
+type=csv
+field_delimiter=','
+skip_header=1
+empty_field_as_null=TRUE;
+
+create or replace stage spotifydb.spotifyschema.albumspotifystage
+URL ='s3://spotify-bucket-phani/transformed_data/album_data/'
+storage_integration=s3_init
+file_format=spotifydb.spotifyschema.spotifyfileformat;
+
+create or replace stage spotifydb.spotifyschema.artistspotifystage
+URL ='s3://spotify-bucket-phani/transformed_data/artists_data/'
+storage_integration=s3_init
+file_format=spotifydb.spotifyschema.spotifyfileformat;
+
+create or replace stage spotifydb.spotifyschema.songspotifystage
+URL ='s3://spotify-bucket-phani/transformed_data/songs_data/'
+storage_integration=s3_init
+file_format=spotifydb.spotifyschema.spotifyfileformat;
+
+create or replace schema spotifydb.spotifypipe;
+
+
+create or replace pipe spotifydb.spotifypipe.albumpipe
+auto_ingest=TRUE
+AS
+COPY INTO spotifydb.spotifyschema.album_table
+FROM @spotifydb.spotifyschema.albumspotifystage;
+
+create or replace pipe spotifydb.spotifypipe.artistpipe
+auto_ingest=TRUE
+AS
+COPY INTO spotifydb.spotifyschema.artist_table
+FROM @spotifydb.spotifyschema.artistspotifystage;
+
+create or replace pipe spotifydb.spotifypipe.songpipe
+auto_ingest=TRUE
+AS
+COPY INTO spotifydb.spotifyschema.song_table
+FROM @spotifydb.spotifyschema.songspotifystage;
+
+desc pipe spotifydb.spotifypipe.songpipe;
+
+select * from spotifydb.spotifyschema.album_table;
+
+list @spotifydb.spotifyschema.songspotifystage;
+
+
+
+
